@@ -6,9 +6,7 @@ This example shows a simulation of collaborative robot workflow in CoppeliaSim. 
 
 <img src="https://user-images.githubusercontent.com/56551323/139922675-bec8337b-556d-4d55-a843-07871c5d8177.gif" alt="drawing" width="500"/>
 
-In this workflow, the human worker transitions to a shelf, grabs some parts, returns to the robot, reaches into the workpiece housing, and then presses a button to activate the robot. The robot puts a gearwheen into the housing. Meanwhile, the human reaches into the workpiece cover and then mounts the cover onto the housing. To simulate the effects of human error, the human model can change the order of worksteps (within some boundaries, since the resulting sequences still must be feasible). To caputure the variability of human motion, the human model can also vary its position at the table (laterally, +/- 20cm), its hand velocity (+/- 20%), and the upper body angle when reaching for the workpieces (+/- 25%). As mentioned above, the goal is to find combinations of action sequences and motion parameters that result in a critical collision. 
-
-_Note: As you may notice from the sometimes awkward human motions, we use a simplified human model in this case. This example is not about achieving an extremely detailed simulation of human motion, it is about the general idea of searching for hazardous behaviors!_
+In this workflow, the human worker transitions to a shelf, grabs some parts, returns to the robot, reaches into the workpiece housing, and then presses a button to activate the robot. The robot puts a gearwheen into the housing. Meanwhile, the human reaches into the workpiece cover and then mounts the cover onto the housing. Yet, it is also possible to create other action sequences, for example by switching out or omitting actions from the workflow (e.g. to simulate the effects of human error).
 
 ## Prerequisites
 This example was developed using Ubuntu 18.04 and CoppeliaSim 4.2). To run this example, you need:
