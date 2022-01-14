@@ -1,9 +1,6 @@
-# Robot-Hazard-Analysis-Simulation
+# Collaborative Robot Workflow in CoppeliaSim with Python API
 ## Introduction
-This example shows how simulation of collaborative robot workflows can be used to uncover potential hazards for the human worker. It is motivated by the problem of design-time risk assessment of robot systems.
-
-## Concept
-The general concept is to simulate a collaborative workflow of human and robot and to evaluate a risk metric during the simulation. The risk metric is based on factors such as human-robot distance, velocity, estimated collision forces, and more. Our objective is to expose hazards by finding unsafe states (more specifically, human-robot collisions that exceed a certain force limit). We achieve this by varying the behavior of the human worker in simulation, and recording behaviors where the the risk metric exceeds a certain threshold. We vary the behavior of the human worker both on an action-level (e.g. the human worker can omit an action or switch the order of actions in the workflow) and on a motion-level (e.g., the worker can walks to a slighly different position each time). Since this results in a vast search space of possible behaviors, a search algorithm shall be used that is guided by the risk metric and tries to find as many high-risk behaviors (not yet integrated). 
+This example shows a simulation of collaborative robot workflow in CoppeliaSim. The human model in the workflow can be controlled through an external Python interface.
 
 ## Example Workflow
 
@@ -24,7 +21,7 @@ To run the example, proceed as follows:
 - Open the CoppeliaSim model and enable the B0-remote API (if you don't know how to do this, an explanation can be found [here](https://www.coppeliarobotics.com/helpFiles/en/b0RemoteApiOverview.htm).
 - Run the script test.py from your console. This will trigger the human model in the simulation to perform an action sequence (currently, the actions are either hard-coded, or randomly selected, as no search algorithm is used at the moment).
 - Depending on how wether you set CONTROL_MANUAL in test.py on True or False, you can either trigger each action manually, or run the whole action sequence at once.
-Note that after each action, the maximum risk value at the current timestep is displayed in the console (for details on the defition of the risk metric, see Section IV-C [this paper](https://ieeexplore.ieee.org/document/9645356).
+Note that during the simulation, a risk metric is evaluated. The risk metric is based on factors such as human-robot distance, velocity, estimated collision forces, and more. After each action, the maximum risk value at the current timestep is displayed in the console (for details on the defition of the risk metric, see Section IV-C [this paper](https://ieeexplore.ieee.org/document/9645356).
 
 In this example, the worker can perform the following actions: Transition between stations (t), reach for parts from the shelf (rP), reach into the workpiece housing (rH), reach into the workpiece cover (rC), press the button to activate the robot (pB), and mount the cover (mC). You can modify the action sequence by changing the variable defaultActionSequence in line 50 of test.py. Alternatively, the action sequences can also be generated randomly by setting USE_RANDOM_ACTIONS = True.
 
