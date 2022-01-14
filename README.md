@@ -1,15 +1,15 @@
 # Collaborative Robot Workflow in CoppeliaSim with Python API
 ## Introduction
-This example shows a simulation of collaborative robot workflow in CoppeliaSim. The human model in the workflow can be controlled through an external Python interface.
+This is a simulation of a human-robot collaborative assembly workflow in CoppeliaSim. The human model in the workflow can be controlled through an external Python interface.
 
 ## Example Workflow
 
 <img src="https://user-images.githubusercontent.com/56551323/139922675-bec8337b-556d-4d55-a843-07871c5d8177.gif" alt="drawing" width="500"/>
 
-In this workflow, the human worker transitions to a shelf, grabs some parts, returns to the robot, reaches into the workpiece housing, and then presses a button to activate the robot. The robot puts a gearwheen into the housing. Meanwhile, the human reaches into the workpiece cover and then mounts the cover onto the housing. Yet, it is also possible to create other action sequences, for example by switching out or omitting actions from the workflow (e.g. to simulate the effects of human error).
+In this workflow, the human worker transitions to a shelf, grabs some parts, returns to the robot, reaches into the workpiece housing, and then presses a button to activate the robot. The robot puts a gearwheel into the housing. Meanwhile, the human reaches into the workpiece cover and then mounts the cover onto the housing. Yet, it is also possible to create other human beavhiors, for example by switching out or omitting actions from the workflow (e.g. to simulate the effects of human error).
 
 ## Prerequisites
-This example was developed using Ubuntu 18.04 and CoppeliaSim 4.2). To run this example, you need:
+This simulation was developed using Ubuntu 18.04 and CoppeliaSim 4.2). To run this example, you need:
 - CoppeliaSim 4.2.0 or newer (available [here](https://www.coppeliarobotics.com/downloads))
 - The Lua Library "String Distance" (Install from [here](http://www.ccpa.puc-rio.br/software/stringdistance/) and place the resulting library file 'stringdistance.so' in the CoppeliaSim installation folder)
 - Python 3 
