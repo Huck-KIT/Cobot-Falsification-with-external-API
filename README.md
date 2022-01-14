@@ -20,10 +20,15 @@ This example was developed using Ubuntu 18.04 and CoppeliaSim 4.2). To run this 
 - Python 3 
 
 ## Run the Example
-To run the example, open the CoppeliaSim model and enable the B0-remote API (if you don't know how to do this, an explanation can be found [here](https://www.coppeliarobotics.com/helpFiles/en/b0RemoteApiOverview.htm).
-Then, run the script test.py from your console. This will trigger the human model in the simulation to perform an action sequence (currently, the actions are either hard-coded, or randomly selected, as no search algorithm is used at the moment). You can either trigger each action manually, or run the whole action sequence at once. After each action, the maximum risk value at the current timestep is displayed in the console (for details on the defition of the risk metric, see Section IV-C [this paper](https://ieeexplore.ieee.org/document/9645356).
-In this example, the worker can perform the following actions: Transition between stations (t), reach for parts from the shelf (rP), reach into the workpiece housing (rH), reach into the workpiece cover (rC), press the button to activate the robot (pB), and mount the cover (mC). 
-We use a finite state machine (FSM) to model which action sequences of the human worker are feasible:
+To run the example, proceed as follows:
+- Open the CoppeliaSim model and enable the B0-remote API (if you don't know how to do this, an explanation can be found [here](https://www.coppeliarobotics.com/helpFiles/en/b0RemoteApiOverview.htm).
+- Run the script test.py from your console. This will trigger the human model in the simulation to perform an action sequence (currently, the actions are either hard-coded, or randomly selected, as no search algorithm is used at the moment).
+- Depending on how wether you set CONTROL_MANUAL in test.py on True or False, you can either trigger each action manually, or run the whole action sequence at once.
+Note that after each action, the maximum risk value at the current timestep is displayed in the console (for details on the defition of the risk metric, see Section IV-C [this paper](https://ieeexplore.ieee.org/document/9645356).
+
+In this example, the worker can perform the following actions: Transition between stations (t), reach for parts from the shelf (rP), reach into the workpiece housing (rH), reach into the workpiece cover (rC), press the button to activate the robot (pB), and mount the cover (mC). You can modify the action sequence by changing the variable defaultActionSequence in line 50 of test.py. Alternatively, the action sequences can also be generated randomly by setting USE_RANDOM_ACTIONS = True.
+
+Note that there are certain constraints on the action sequences that are possible. The following finite state machine (FSM) shows which action sequences of the human worker are feasible:
 
 <img src="https://user-images.githubusercontent.com/56551323/139909669-5295cd09-7c8b-432c-a03f-5b898078db2e.png" alt="drawing" width="800"/>
 
