@@ -1,0 +1,37 @@
+This is a minimal example for running the CoppeliaSim Python remote API. It was tested on CoppeliaSim Edu V4.0.0 under Ubuntu 18.04.
+
+To run the example, follow these steps:
+1) Clone this repository into a folder in your CoppeliaSim root directory.
+2) Open the scene example.ttt in CoppeliaSim
+3) In CoppeliaSim, click the checkbox "Add-ons --> R0remoteApiServer". At the bottom of the screen, the following message should appear: "Started add-on script b0RemoteApiServer"
+4) Use command line to enter the folder and run the "test.py" script. The test script starts the simulation and prints out the joint angle of the robot base joint to your command line, and stops the simulation again.
+In CoppeliaSim, you should nowdir
+ see that the robot is moving for a short time. In the command line, you should see the following output:
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+importing successful!
+
+  Running B0 Remote API client with channel name [b0RemoteApiAddOn]
+  make sure that: 1) the B0 resolver is running
+                  2) V-REP is running the B0 Remote API server with the same channel name
+  Initializing...
+
+
+  Connected!
+
+0.110850602388
+0.110850602388
+0.111723266542
+0.114341259003
+0.118704587221
+0.124813236296
+0.132667213678
+0.142266526818
+0.153611168265
+0.16670113802
+0.181536436081
+0.198117062449
+...
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
