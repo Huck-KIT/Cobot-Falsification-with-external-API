@@ -11,7 +11,6 @@ In this workflow, the human worker transitions to a shelf, grabs some parts, ret
 ## Prerequisites
 This simulation was developed using Ubuntu 18.04 and CoppeliaSim 4.2). To run this example, you need:
 - CoppeliaSim 4.2.0 or newer (available [here](https://www.coppeliarobotics.com/downloads))
-- The Lua Library "String Distance" (Install from [here](http://www.ccpa.puc-rio.br/software/stringdistance/) and place the resulting library file 'stringdistance.so' in the CoppeliaSim installation folder)
 - Python 3 
 
 ## Run the Example
