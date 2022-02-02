@@ -16,8 +16,9 @@ class Transition:
     self.isActive = False
 
 class Automaton:
-    def __init__(self, states, transitions, truthTableNames):
+    def __init__(self, states, actionSpace, transitions, truthTableNames):
         self.states = states
+        self.actionSpace = actionSpace
         self.numberOfStates = len(states)
         self.transitions = transitions
         self.currentStateIndex = 0
@@ -61,6 +62,9 @@ class Automaton:
             return False
 
     def checkAcceptance(self,inputSequence):
+        """ checks if an input sequence can be run through the automaton.
+        Returns false if the sequence results in any state where the next action
+        cannot be performed"""
         currentStateIndexLocal = 0 # initial state
         currentInputIndexLocal = 0 # first input symbol
         if self.isVerbose:
@@ -103,8 +107,8 @@ class Automaton:
         self.isVerbose = isVerbose
 
     def getNextTransition(self, transitionList, inputTransition):
-        # returns next transition and index of resulting state if a transition is possible and 'False' if not.
-        # if multiple transitions are possible, the one with the shortest duration wins.
+        """ returns next transition and index of resulting state if a transition is possible and 'False' if not.
+        if multiple transitions are possible, the one with the shortest duration wins. """
         acceptedTransition = False
         nextStateIndex = None
         for i in range(len(transitionList)):
@@ -121,7 +125,7 @@ class Automaton:
 
     def iterate(self,timestep,externalTriggerInput):
         externalTriggerOutput = False
-
+        """ steps the automaton forward one timestep (only used for timed automata)"""
         ######################### print and log current state #########################
         if self.isVerbose:
             print("----------------------------")
@@ -184,6 +188,7 @@ class Automaton:
         return isActive,externalTriggerOutput
 
     def printLog(self):
+        """ print a log of all states visited in the current run """
         truthTable = list()
         for i in range(len(self.stateLog)):
             truthTable.append(self.stateLog[i].truthTable)
@@ -202,13 +207,29 @@ class Automaton:
             print(outputLine)
         print("\n")
 
-
-
-
     def getTruthTable(self):
-        # returns a list of truth tables (one table for for each timestep)
+        """ returns a list of truth tables (one table for for each timestep) """
         truthTable = list()
         # truthTable.append(self.stateLog[0].truthTable)
         for i in range(len(self.stateLog)):
             truthTable.append(self.stateLog[i].truthTable)
         return truthTable
+
+    def getFeasibleActions(self):
+        """ returns a list of all actions that are feasible in the current state
+        and a list of their indices in the action space"""
+        # get all actions possible in the current state
+        listOfActions = list()
+        for t in self.transitions[self.currentStateIndex]:
+            if isinstance(t,list): # necessary because multiple transitions might be in one field of the transition table
+                for t_temp in t:
+                    if t_temp is not False:
+                        listOfActions.append(t_temp)
+            else:
+                if t is not False:
+                    listOfActions.append(t)
+        # get indices of the possible actions in the action space
+        listOfActionIndices = list()
+        for a in listOfActions:
+            listOfActionIndices.append(self.actionSpace.index(a))
+        return listOfActions,listOfActionIndices
