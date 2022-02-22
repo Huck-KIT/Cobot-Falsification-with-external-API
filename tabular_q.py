@@ -7,44 +7,23 @@ from skopt import gp_minimize
 
 import b0RemoteApi
 from FiniteStateMachine import State, Transition, Automaton
+from Workflows import Workflow1, Workflow1Mod
 
 ################################# USER SETTINGS ################################
 # User settings
 USE_RANDOM_ACTIONS = False  # True =  actions are sampled randomly from the action space. False = A default action sequence will be used
+USE_MAX_REWARDS = True # False = reward is obtained in each step of the episode. False = Max. reward is tracked during episode and returned at the end of episode
 
-################################# CREATE FSM ###################################
-# Define states
-#               state description                       isAcceptingFinalState   isTerminal  Truth table (optioal; not used here)
-s_A1N = State("worker at area 1, no parts taken", True, False, [])
-s_A2N = State("worker at area 2, no parts taken", True, False, [])
-s_A1P = State("worker at area 1, parts taken", True, False, [])
-s_A2P = State("worker at area 2, parts taken", True, False, [])
-s_A1E = State("worker at area 1, assembly ended", True, False, [])
-s_A2E = State("worker at area 2, assembly ended", True, False, [])
-states = [s_A1N, s_A2N, s_A1P, s_A2P, s_A1E, s_A2E]  # first state in list is taken as initial state
 
-# Define Transitions
-# NOTE: since we only use the automaton for acceptance checking, we do not use timed transitions or external triggers.
-# Therefore, the durations of the transition are set to 0 and the external triggers to False.
-#                   name            isAutomatic    duration     isTriggeredExternally   setsExternalTrigger
-t = Transition("t", False, 0, False, False)  # transition between stations
-r_P = Transition("rP", False, 0, False, False)  # reach for parts
-r_H = Transition("rH", False, 0, False, False)  # reach in housing
-r_C = Transition("rC", False, 0, False, False)  # reach in cover
-p_B = Transition("pB", False, 0, False, False)  # press button
-m_C = Transition("mC", False, 0, False, False)  # mount cover
-actionSpace = [t, r_P, r_H, r_C, p_B, m_C]
+############################# LOAD WORKFLOW MODEL ##############################
 
-# Define transition matrix (rows: start states, colums: resulting states)
-trans = [[p_B, t, False, False, False, False],
-         [t, False, False, r_P, False, False],
-         [False, False, [r_H, r_C, p_B], t, m_C, False],
-         [False, False, t, False, False, False],
-         [False, False, False, False, p_B, t],
-         [False, False, False, False, t, False]]
+#workflow = Workflow1()      # scenario 1, original workflow
+workflow = Workflow1Mod()   # scenario 1, modified workflow
 
-# Create FSM
-workflowModel = Automaton(states, trans, [])
+workflowModel = workflow.workflowModel #Automaton(states, actionSpace, trans, [])
+states = workflow.states
+trans = workflow.transitions
+actionSpace = workflow.actionSpace
 workflowModel.setVerbosity(False)
 
 ITERATION = 0
@@ -126,6 +105,7 @@ with b0RemoteApi.RemoteApiClient('b0RemoteApi_V-REP-addOn',
 
         def reset():
             client.simxCallScriptFunction("reset@Bill", "sim.scripttype_childscript", 1, client.simxServiceCall())
+            print("--------- Reset and start new Episode ---------")
             workflowModel.reset()
             actionHistory = list()
             return workflowModel.currentStateIndex, actionHistory
@@ -190,8 +170,16 @@ with b0RemoteApi.RemoteApiClient('b0RemoteApi_V-REP-addOn',
             :param x: state
             :param epsilon: float
             """
+            _, feasibleActionIndices = workflowModel.getFeasibleActions()
+            # print("------")
+            # print("current state: "+states[workflowModel.currentStateIndex].name)
+            # print("feasible actions: ")
+            # for index in feasibleActionIndices:
+            #     print(actionSpace[index].name)
+            # print("------")
             if random.random() < epsilon:
-                return random.choice(list(Q[x].keys()))
+                #return random.choice(list(Q[x].keys # sample from whole action actionSpace
+                return random.choice(feasibleActionIndices) # sample only from subset of action space that is actually feasible
             action = argmax_Q(Q, x)
             return action
 
@@ -205,11 +193,29 @@ with b0RemoteApi.RemoteApiClient('b0RemoteApi_V-REP-addOn',
             x, actionHistory = reset()
             done = False
             rewards = 0
+            r_max = 0
 
             for m in range(max_steps):
                 # Pick action
                 a = choose_epsilon_greedily(Q, x, epsilon)
                 next_x, r, done = step(actionSpace[a])
+
+                """
+                # hack by tom: track maximum reward during episode and only return it at the end of episode (all steps inbetween give 0)
+                if USE_MAX_REWARDS:
+                    # track maximum of the rewards occuring during the episode
+                    if r > r_max:
+                        r_max = r
+                if done or m == max_steps-1:
+                    # return the maximum at the end of episode
+                    r = r_max
+                    r_max = 0
+                else:
+                    # no intermediate rewards (i.e., during episode) is given.
+                    r = 0
+                """
+
+                print("collected reward in this step: " + str(r))
 
                 # Update Q-Table
                 alpha = A / (B + l)
@@ -251,7 +257,8 @@ with b0RemoteApi.RemoteApiClient('b0RemoteApi_V-REP-addOn',
                 fig.show()
         # close()
 
-        return - (sum(performance) + 10 * max(performance))
+        #return - (sum(performance) + 10 * max(performance))
+        return max(performance)
 
 
     if __name__ == "__main__":
@@ -261,4 +268,5 @@ with b0RemoteApi.RemoteApiClient('b0RemoteApi_V-REP-addOn',
                               x0=[0.1, 0.9, 400, 500], n_calls=50, n_jobs=-1, verbose=True)
             print(res)
         else:
-            learn([0.05, 0.99, 500, 500])
+            #learn([0.05, 0.99, 500, 500]) # original
+            learn([0.2, 0.99, 500, 500])
