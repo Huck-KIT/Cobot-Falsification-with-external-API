@@ -78,3 +78,47 @@ class Workflow1Mod():
 
         # Create FSM
         self.workflowModel = Automaton(self.states, self.actionSpace, self.transitions, [])
+
+""" ---------------------------------- scenario 2 ------------------------------
+This is the workflow according to Fig. 7 in our Overleaf notes.
+"""
+
+class Workflow2():
+    def __init__(self):
+        s_SI    = State("Part at storage, robot idle",                      True, False, [])
+        s_SW    = State("Part at storage, robot working (normal)",          True, False, [])
+        s_SO    = State("Part at stoarge, robot working (safety override)", True, False, [])
+        s_HI    = State("Worker has part, robot idle",                      True, False, [])
+        s_HW    = State("Worker has part, robot working (normal)",          True, False, [])
+        s_HO    = State("Worker has part, robot working (safety override)", True, False, [])
+        s_RI    = State("Robot has part, robot idle",                       True, False, [])
+        s_RW    = State("Robot has part, robot working (normal)",           True, False, [])
+        s_RO    = State("Robot has part, robot working (safety override)",  True, False, [])
+        self.states = [s_SI, s_SW, s_SO, s_HI, s_HW, s_HO, s_RI, s_RW, s_RO]  # first state in list is taken as initial state
+
+        # Define Transitions
+        # NOTE: since we only use the automaton for acceptance checking, we do not use timed transitions or external triggers.
+        # Therefore, the durations of the transition are set to 0 and the external triggers to False.
+        #                   name            isAutomatic    duration     isTriggeredExternally   setsExternalTrigger
+        p   = Transition("p",   False, 0, False, False)  # get part from storage/put it back
+        f   = Transition("f",   False, 0, False, False)  # feed part to robot/retreive it
+        b_W = Transition("b_W", False, 0, False, False)  # press button to activate robot (normal)
+        b_O = Transition("b_O", False, 0, False, False)  # press button to activate robot in safety override mode
+        w   = Transition("w",   False, 0, False, False)  # wait
+        i   = Transition("i",   False, 0, False, False)  # inspect
+        self.actionSpace = [p, f, b_W, b_O, w, i]
+
+        # Define transition matrix (rows: start states, colums: resulting states)
+        #                       s_SI    s_SW    s_WO    s_HI    s_HW    s_HO    s_RI    s_RW    s_RO
+        self.transitions =     [[w,     b_W,    b_O,    p,      False,  False,  False,  False,  False],
+                                [b_W,   w,      False,  False,  p,      False,  False,  False,  False],
+                                [b_O,   False,  w,      False,  False,  p,      False,  False,  False],
+                                [p,     False,  False,  w,      False,  False,  f,      False,  False],
+                                [False, p,      False,  False,  w,      False,  False,  f,      False],
+                                [False, False,  p,      False,  False,  w,      False,  False,  f    ],
+                                [False, False,  False,  f,      False,  False,  [w,i],  b_W,    b_O  ],
+                                [False, False,  False,  False,  f,      False,  b_W,    [w,i],  False],
+                                [False,  False,  False,  False, False,  f,      b_O,    False,  [w,i]]]
+
+        # Create FSM
+        self.workflowModel = Automaton(self.states, self.actionSpace, self.transitions, [])
