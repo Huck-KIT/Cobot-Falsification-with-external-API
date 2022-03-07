@@ -3,7 +3,7 @@ import sys
 import itertools
 import random
 from FiniteStateMachine import State, Transition, Automaton
-from Workflows import Workflow1, Workflow1Mod
+from Workflows import Workflow1, Workflow1Mod, Workflow2
 
 ################################# USER SETTINGS ################################
 # User settings
@@ -13,8 +13,9 @@ USE_RANDOM_ACTIONS = False # True =  actions are sampled randomly from the actio
 ACTION_SEQUENCE_LENGTH = 8 # is only relevant for random actions
 
 ################################# LOAD FSM ###################################
-#workflow = Workflow1()      # scenario 1, original workflow
-workflow = Workflow1Mod()   # scenario 1, modified workflow
+# workflow = Workflow1()      # scenario 1, original workflow
+# workflow = Workflow1Mod()   # scenario 1, modified workflow
+workflow = Workflow2()      # scenario 2
 
 workflowModel = workflow.workflowModel #Automaton(states, actionSpace, trans, [])
 states = workflow.states
@@ -23,15 +24,8 @@ actionSpace = workflow.actionSpace
 workflowModel.setVerbosity(False)
 
 # Define default action sequence (this sequence will be used if USE_RANDOM_ACTIONS == False)
-""" For Workflow1 and Workflow1Mod, the actions are encoded as follows:
-0: t    # transition between stations
-1: r_P  # reach for parts
-2: r_H  # reach in housing
-3: r_C  # reach in cover
-4: p_B  # press button
-5: m_C  # mount cover
-"""
-defaultActionSequenceIndices = [0, 1, 0, 2, 5, 4, 3, 5] #[t,r_P,t,r_H,p_B,r_C,m_C]
+
+defaultActionSequenceIndices = [0, 1, 3, 1, 1, 4, 1] #[t,r_P,t,r_H,p_B,r_C,m_C]
 defaultActionSequence = list()
 for index in defaultActionSequenceIndices:
     defaultActionSequence.append(actionSpace[index])
@@ -71,7 +65,7 @@ with b0RemoteApi.RemoteApiClient('b0RemoteApi_V-REP-addOn','b0RemoteApiAddOn') a
                 else:
                     nextAction = defaultActionSequence[actionSequenceIndex]
                 actionIsSet,_ = client.simxCallScriptFunction("setAction@Bill","sim.scripttype_childscript",nextAction.name,client.simxServiceCall())
-                client.simxCallScriptFunction("setMotionParameters@Bill","sim.scripttype_childscript",[0,1,1],client.simxServiceCall()) # TODO: check that parameters are within limits
+                #client.simxCallScriptFunction("setMotionParameters@Bill","sim.scripttype_childscript",[0,1,1],client.simxServiceCall()) # TODO: check that parameters are within limits
                 if actionIsSet:
                     actionSequenceIndex += 1
                     print("New action was set: " + nextAction.name)
