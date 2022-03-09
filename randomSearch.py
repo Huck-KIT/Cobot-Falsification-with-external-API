@@ -155,6 +155,21 @@ with b0RemoteApi.RemoteApiClient('b0RemoteApi_V-REP-addOn','b0RemoteApiAddOn') a
     np.save(filepathForResults + "/actions.npy", results_actions)
     #resultRisk = np.asarray(actionsFromAllEpisodes)
 
+    # plot report to console
+    print("------- report -------")
+    print("Simulation Steps total: "+str(N_STEPS_TOTAL)+"\n")
+    print("Episode length: \t "+str(N_STEPS_EPISODE)+"\n")
+    print("Action sequences resulting in collision:" +"\n")
+    riskThreshold = 1
+    for i in range(len(maxRiskList)):
+        if maxRiskList[i] > riskThreshold:
+            print("--------------------")
+            print(results_actions[i])
+            print(maxRiskList[i])
+
+
+
+
     plt.plot(maxRiskList,"*")
     plt.ylabel('Max risk of episode')
     plt.xlabel('Episodes')
