@@ -1,5 +1,5 @@
 import random
-from collections import namedtuple
+from collections import namedtuple, deque
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -48,16 +48,20 @@ def isFeasible(action, state):
 
 class QAgent(object):
 
-    def __init__(self, gamma=0.9, A=500, B=1000):
+    def __init__(self, gamma=0.9, A=100, B=1000, batch_size=50):
         self.gamma = gamma
         self.A = A
         self.B = B
         self.step = 0
+        self.batch_size = batch_size
+        self.memory = ReplayMemory(200)
 
         # Initialize Q-function
         self.weights = dict()
+        self.target_weights = dict()
         for a in range(len(actionSpace)):
             self.weights[a] = np.zeros(9)
+            self.target_weights[a] = np.zeros(9)
 
     def policy(self, state):
         # Pick action
@@ -75,18 +79,41 @@ class QAgent(object):
         return a, max_q
 
     def update(self, state, action, reward, next_state, done):
-        q = np.asscalar(np.dot(state, self.weights[action]))
-        if done:
-            max_next_q = 0
-        else:
-            max_next_q = -np.inf
-            for w in self.weights.values():
-                q_a = np.asscalar(np.dot(next_state, w))
-                if q_a > max_next_q:
-                    max_next_q = q_a
-        alpha = self.A / (self.B + self.step)
-        self.weights[action] += alpha * (reward + self.gamma * max_next_q - q) * state
         self.step += 1
+        self.memory.push(state, action, reward, next_state, done)
+        if len(self.memory) < self.batch_size:
+            return
+        for t in self.memory.sample(self.batch_size):
+            q = np.asscalar(np.dot(t.state, self.weights[t.action]))
+            if t.done:
+                max_next_q = 0
+            else:
+                max_next_q = -np.inf
+                for w in self.target_weights.values():
+                    q_a = np.asscalar(np.dot(t.next_state, w))
+                    if q_a > max_next_q:
+                        max_next_q = q_a
+            alpha = self.A / (self.B + self.step)
+            self.weights[t.action] += alpha * (t.reward + self.gamma * max_next_q - q) * t.state
+        for a in range(len(actionSpace)):
+            self.target_weights[a] = 0.9 * self.target_weights[a] + 0.1 * self.weights[a]
+
+
+Transition = namedtuple('Transition', ['state', 'action', 'reward', 'next_state', 'done'])
+
+
+class ReplayMemory(object):
+    def __init__(self, capacity):
+        self.memory = deque([], maxlen=capacity)
+
+    def push(self, *args):
+        self.memory.append(Transition(*args))
+
+    def sample(self, batch_size):
+        return random.sample(self.memory, batch_size)
+
+    def __len__(self):
+        return len(self.memory)
 
 
 def learn(args=None):
