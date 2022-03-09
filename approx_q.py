@@ -21,6 +21,7 @@ p_B = Action("pB")  # press button
 m_C = Action("mC")  # mount cover
 i_A = Action("i_A")  # initialize new assembly
 actionSpace = [t, r_P, r_H, r_C, p_B, m_C, i_A]
+nominalAssembly = [t, r_P, t, r_H, p_B, r_C, m_C]
 
 
 def isFeasible(action, state):
@@ -119,13 +120,19 @@ class ReplayMemory(object):
 def learn(args=None):
     Q = QAgent()
     performance = []
+    fig, ax = plt.subplots()
+    ax.grid(True)
+    ax.set_title('Approx. Q-learning over Episodes of {} steps'.format(max_steps))
+    ax.set_xlabel('Episode')
+    ax.set_ylabel('Total Reward')
 
     for l in range(num_episodes):
         # Reset for episode
         s = reset()
 
         rewards = []
-
+        assemblySeq = nominalAssembly.copy()
+        completedSeq = 0
         for m in range(max_steps):
             # Pick action
             a, max_q = Q.policy(s)
@@ -138,6 +145,14 @@ def learn(args=None):
             print("Action:", actionSpace[a].name, "Q-value:", max_q)
 
             rewards.append(r)
+            # Tracking progress on assembly
+            if actionSpace[a].name == 'i_A':
+                assemblySeq = nominalAssembly.copy()
+            elif len(assemblySeq) > 0 and actionSpace[a] == assemblySeq[0]:
+                assemblySeq.pop(0)
+                if len(assemblySeq) == 0:
+                    print('---------- Assembly Sequence Completed ----------')
+                    completedSeq += 1
 
             # Update
             Q.update(s, a, r, next_s, done)
@@ -150,13 +165,12 @@ def learn(args=None):
 
         performance.append(sum(rewards))
 
-        plt.plot(performance, 'b.')
-        plt.title('Approx. Q-learning over Episodes of {} steps'.format(max_steps))
-        plt.xlabel('Episode')
-        plt.ylabel('Total Reward')
-        plt.show()
+        ax.plot(l, sum(rewards), 'b.')
+        ax.text(l, sum(rewards), completedSeq)
+        fig.tight_layout()
+        fig.show()
 
-    return True
+    return Q
 
 
 def step(action):
