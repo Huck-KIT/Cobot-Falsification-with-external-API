@@ -7,8 +7,10 @@ import numpy as np
 import b0RemoteApi
 
 # User settings
-random.seed(8)
+random.seed(13)
 TUNE = False
+num_episodes = 20
+max_steps = 100
 
 Action = namedtuple('action', ['name'])
 t = Action("t")  # transition between stations
@@ -17,7 +19,7 @@ r_H = Action("rH")  # reach in housing
 r_C = Action("rC")  # reach in cover
 p_B = Action("pB")  # press button
 m_C = Action("mC")  # mount cover
-i_A = Action("i_A") # initialize new assembly
+i_A = Action("i_A")  # initialize new assembly
 actionSpace = [t, r_P, r_H, r_C, p_B, m_C, i_A]
 
 
@@ -44,66 +46,80 @@ def isFeasible(action, state):
         return True
 
 
+class QAgent(object):
+
+    def __init__(self, gamma=0.9, A=500, B=1000):
+        self.gamma = gamma
+        self.A = A
+        self.B = B
+        self.step = 0
+
+        # Initialize Q-function
+        self.weights = dict()
+        for a in range(len(actionSpace)):
+            self.weights[a] = np.zeros(9)
+
+    def policy(self, state):
+        # Pick action
+        if random.random() < pow(0.5, int(self.step / (2 * max_steps)) + 1):
+            a = random.randint(0, len(actionSpace) - 1)
+            max_q = np.asscalar(np.dot(state, self.weights[a]))
+        else:
+            max_q = -np.inf
+            a = None
+            for action, w in self.weights.items():
+                q_a = np.asscalar(np.dot(state, w))
+                if q_a > max_q:
+                    max_q = q_a
+                    a = action
+        return a, max_q
+
+    def update(self, state, action, reward, next_state, done):
+        q = np.asscalar(np.dot(state, self.weights[action]))
+        if done:
+            max_next_q = 0
+        else:
+            max_next_q = -np.inf
+            for w in self.weights.values():
+                q_a = np.asscalar(np.dot(next_state, w))
+                if q_a > max_next_q:
+                    max_next_q = q_a
+        alpha = self.A / (self.B + self.step)
+        self.weights[action] += alpha * (reward + self.gamma * max_next_q - q) * state
+        self.step += 1
+
+
 def learn(args=None):
-    num_episodes = 20
-    max_steps = 100
-
-    A, B = 500, 1000
-    gamma = 0.9
-
+    Q = QAgent()
     performance = []
-
-    # Initialize Q-function
-    weights = dict()
-    for a in range(len(actionSpace)):
-        weights[a] = np.zeros(9)
 
     for l in range(num_episodes):
         # Reset for episode
-        x = reset()
+        s = reset()
 
         rewards = []
 
         for m in range(max_steps):
             # Pick action
-            if random.random() < pow(0.5, l/2):
-                a = random.randint(0, len(actionSpace) - 1)
-                max_q = np.asscalar(np.dot(x, weights[a]))
-            else:
-                max_q = - np.inf
-                a = None
-                for action, w in weights.items():
-                    q_a = np.asscalar(np.dot(x, w))
-                    if q_a > max_q:
-                        max_q = q_a
-                        a = action
+            a, max_q = Q.policy(s)
 
             # Step
-            if isFeasible(a, x):
-                next_x, r, done = step(actionSpace[a])
+            if isFeasible(a, s):
+                next_s, r, done = step(actionSpace[a])
             else:
-                next_x, r, done = x, 0, False
+                next_s, r, done = s, 0, False
             print("Action:", actionSpace[a].name, "Q-value:", max_q)
 
             rewards.append(r)
 
             # Update
-            if done:
-                max_next_q = 0
-            else:
-                max_next_q = - np.inf
-                for w in weights.values():
-                    q_a = np.asscalar(np.dot(next_x, w))
-                    if q_a > max_next_q:
-                        max_next_q = q_a
-            alpha = A / (B + l * m + m)
-            weights[a] += alpha * (r + gamma * max_next_q - max_q) * x
+            Q.update(s, a, r, next_s, done)
 
             if done:
                 break
 
             # Increment
-            x = next_x
+            s = next_s
 
         performance.append(sum(rewards))
 
