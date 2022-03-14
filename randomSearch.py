@@ -5,13 +5,18 @@ import itertools
 import random
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from datetime import datetime
+
+now = datetime.now()
+
+current_time = now.strftime("%H:%M:%S")
 
 global actionSpace
 
-actionSpace = ["t","rP","rH","rC","mC","pB"]
+actionSpace = ["t","rP","rH","rC","mC","pB","i_A"]
 
-filepathForResults = os.getcwd()+"/resultsRandomSearch/"
+filepathForResults = os.getcwd()+"/resultsRandomSearch/"+current_time
 if not os.path.exists(filepathForResults):
     os.makedirs(filepathForResults)
 print("Results will be saved to: "+filepathForResults)
@@ -27,16 +32,18 @@ def checkPreconditions(action,stateVector):
     s_rC =      stateVector[5]
     s_cover =   stateVector[6]
 
+    if action == "i_A":
+        return True # reset always possible
     if action == "t":
-        return True
+        return True # transition always possible
     elif action == "rP":
         return not stateVector[0] # not s_area
     elif action == "rH":
-        return s_area and s_parts and (not s_cover) and (not s_gear)
+        return s_area and (not s_cover) and (not s_gear)
     elif action == "rC":
-        return s_area and s_parts and (not s_cover)
+        return s_area and (not s_cover)
     elif action == "mC":
-        return s_area and s_parts and (not s_cover)
+        return s_area and (not s_cover)
     elif action == "pB":
         return s_area
     else:
@@ -52,15 +59,29 @@ def getFeasibleActions(stateVector):
 def getMaxRiskValues(risksFromAllEpisodes):
     maxRiskList = list()
     for riskSequence in risksFromAllEpisodes:
-        maxRiskList.append(max(riskSequence))
+        if len(riskSequence) == 0:
+            maxRiskList.append(0)
+        else:
+            maxRiskList.append(max(riskSequence))
     return maxRiskList
+
+def convertToPaddedArray(inputList,typeOfArray):
+    # convert nested list of different length to numpy array (padded with zeros for uniform dimensions)
+    if typeOfArray == "float":
+        paddedArray = np.zeros([len(inputList),len(max(inputList,key = lambda x: len(x)))])
+    #elif typeOfArray == "string":
+    else:
+        paddedArray = np.chararray([len(inputList),len(max(inputList,key = lambda x: len(x)))])
+    for i,j in enumerate(inputList):
+        paddedArray[i][0:len(j)] = j
+    return paddedArray
 
 with b0RemoteApi.RemoteApiClient('b0RemoteApi_V-REP-addOn','b0RemoteApiAddOn') as client:  #This line defines the client, which provides all functions of the remote API
     # the function list can be found here: https://www.coppeliarobotics.com/helpFiles/en/b0RemoteApi-functionList.htm
 
     actionIsSet = False
-    N_STEPS_EPISODE = 9 #length of nominal sequence + 2
-    N_STEPS_TOTAL = 100*N_STEPS_EPISODE
+    N_STEPS_EPISODE = 10 #max episode length (shorter episodes are possible if reset action i_A is sampled)
+    N_STEPS_TOTAL = 10000
 
     # initialize simulation
     client.simxSynchronous(True)
@@ -69,8 +90,10 @@ with b0RemoteApi.RemoteApiClient('b0RemoteApi_V-REP-addOn','b0RemoteApiAddOn') a
 
     stepCounterTotal = 0
     stepCounterEpisode = 0
+    episodeCounter = 1
     risksFromAllEpisodes = list() # list of risk values over the whole search
     actionsFromAllEpisodes = list() # list of action sequences from all episodes
+    motionParametersFromAllEpsiodes = list()
 
     motionParametersMin     = [-0.2,0.8,1]
     motionParametersMax     = [0.2,1.2,1.5]
@@ -78,18 +101,21 @@ with b0RemoteApi.RemoteApiClient('b0RemoteApi_V-REP-addOn','b0RemoteApiAddOn') a
 
     # main loop (1 execution = 1 search episode)
     while (stepCounterTotal <= N_STEPS_TOTAL):
-
+        #reset = False
         # initialize new episode
-        print("-------------- new episode --------------")
 
+        print("-------------- new episode "+str(episodeCounter)+" --------------")
+        reset = False
+        episodeCounter+=1
         risksFromThisEpisode = list()
         actionsFromThisEpisode = list()
+        motionParametersFromThisEpsiode = list()
         stepCounterEpisode = 0
         client.simxCallScriptFunction("resetMaxRisk@RiskMetricCalculator","sim.scripttype_childscript",1,client.simxServiceCall())
         client.simxCallScriptFunction("reset@Bill","sim.scripttype_childscript",1,client.simxServiceCall())
 
         # action loop (1 execution = 1 single action in the simulation)
-        while (stepCounterEpisode <= N_STEPS_EPISODE):
+        while (stepCounterEpisode <= N_STEPS_EPISODE) and not reset:
 
             # check if human model is cucrently performaing an action
             _,isRunning = client.simxCallScriptFunction("isHumanModelActive@Bill","sim.scripttype_childscript",1,client.simxServiceCall())
@@ -123,56 +149,45 @@ with b0RemoteApi.RemoteApiClient('b0RemoteApi_V-REP-addOn','b0RemoteApiAddOn') a
                 else:
                     raise Exception("Error: Retrieve state variables failed.")
 
-                # sample next action (randomly)
+                # sample random action
                 action = random.choice(getFeasibleActions(currentState))
-                actionsFromThisEpisode.append(action)
-                client.simxCallScriptFunction("setAction@Bill","sim.scripttype_childscript",action,client.simxServiceCall())
                 print("new action:"+action)
+                if action == "i_A": #reset
+                    reset = True
+                else:
+                    actionsFromThisEpisode.append(action)
+                    client.simxCallScriptFunction("setAction@Bill","sim.scripttype_childscript",action,client.simxServiceCall())
 
-                # set continuous motion parameters (randomly)
+                # sample random continuous motion parameters
                 motionParameters = list()
                 for k in range(3):
-                    print(k)
                     param = motionParametersMin[k]+ (motionParametersMax[k]-motionParametersMin[k]) * random.random()
                     motionParameters.append(param)
-                    #assert motionParameters.append(motionParametersMin[k])# + (motionParametersMax[k]-motionParametersMin[k]) * random.random())
-                print("selected motion parameters:")
-                print(motionParameters)
-                client.simxCallScriptFunction("setMotionParameters@Bill","sim.scripttype_childscript",motionParameters,client.simxServiceCall()) # TODO: check that parameters are within limits
+                motionParametersFromThisEpsiode.append(motionParameters)
+                client.simxCallScriptFunction("setMotionParameters@Bill","sim.scripttype_childscript",motionParameters,client.simxServiceCall())
 
                 stepCounterEpisode += 1
                 stepCounterTotal += 1
-        if (not stepCounterTotal == 0): # don't do this in the first epside, since there are no risk values available
+
+        # save data from this episode
+        if (not stepCounterTotal == 0): # don't do this in the first epsiode, since there are no risk values available
             risksFromAllEpisodes.append(risksFromThisEpisode)
             actionsFromAllEpisodes.append(actionsFromThisEpisode)
+            motionParametersFromAllEpsiodes.append(motionParametersFromThisEpsiode)
         print(risksFromAllEpisodes)
 
-    # save results as np file
-    maxRiskList     = getMaxRiskValues(risksFromAllEpisodes)
-    results_risk    = np.asarray(risksFromAllEpisodes)
-    results_actions = np.asarray(actionsFromAllEpisodes)
+    # save and plot results
+    # action sequences
+    with open(filepathForResults + '/actionSequences.txt', 'w') as filehandle:
+        filehandle.writelines("%s\n" % place for place in actionsFromAllEpisodes)
+    # risk values
+    results_risk = convertToPaddedArray(risksFromAllEpisodes,"float")
     np.save(filepathForResults + "/risks.npy", results_risk)
-    np.save(filepathForResults + "/actions.npy", results_actions)
-    #resultRisk = np.asarray(actionsFromAllEpisodes)
 
-    # plot report to console
-    print("------- report -------")
-    print("Simulation Steps total: "+str(N_STEPS_TOTAL)+"\n")
-    print("Episode length: \t "+str(N_STEPS_EPISODE)+"\n")
-    print("Action sequences resulting in collision:" +"\n")
-    riskThreshold = 1
-    for i in range(len(maxRiskList)):
-        if maxRiskList[i] > riskThreshold:
-            print("--------------------")
-            print(results_actions[i])
-            print(maxRiskList[i])
-
-
-
-
+    maxRiskList         = getMaxRiskValues(risksFromAllEpisodes)
     plt.plot(maxRiskList,"*")
     plt.ylabel('Max risk of episode')
     plt.xlabel('Episodes')
     plt.grid(True)
     plt.show()
-    #plt.save(filepathForResults+str(datetime.now())+".png")
+    #plt.save(filepathForResults+str("figure.png")
