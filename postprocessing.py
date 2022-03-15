@@ -1,9 +1,11 @@
-import numpy as np
-import matplotlib.pyplot as plt
 import os
 import re
 import statistics
+
+import matplotlib.pyplot as plt
+import numpy as np
 from pyxdameraulevenshtein import damerau_levenshtein_distance
+
 
 def getDistanceFromNominal(actionSequence):
     # to use the damerau levenshtein distance, action sequence is converted into a single string
@@ -21,16 +23,23 @@ def getDistanceFromNominal(actionSequence):
             actionSequenceAsString += "h"
         elif action == "mC":
             actionSequenceAsString += "m"
+        elif action == "iA":
+            actionSequenceAsString += "i"
         print("calculate distance for: "+actionSequenceAsString)
-        print(damerau_levenshtein_distance(actionSequenceAsString,"tpthbcm"))
-    return damerau_levenshtein_distance(actionSequenceAsString,"tpthbcm")
+        print(damerau_levenshtein_distance(actionSequenceAsString,"tpthbcmi"))
+    return damerau_levenshtein_distance(actionSequenceAsString,"tpthbcmi")
 
 
 riskThreshold = 1 # action sequences with risk above this threshold contain a collision
-filepath = os.getcwd()+"/resultsRandomSearch/16:14:58"
+filepath = os.getcwd()+"/resultsLQ/15:50:25"
 
 # load file with risk values
-riskValues = np.load(filepath+"/risks.npy")
+if os.path.exists(filepath+"/risks.npy"):
+    riskValues = np.load(filepath+"/risks.npy")
+elif os.path.exists(filepath+"/risks.csv"):
+    riskValues = np.loadtxt(filepath+"/risks.csv", delimiter=',')
+else:
+    print('Error: No Risk data found!')
 actionSequences = []
 
 # open file with saved action sequences and read the content in a list
@@ -39,6 +48,7 @@ with open(filepath + '/actionSequences.txt', 'r') as filehandle:
     for line in filecontents:
         current_line = line[:-1]
         current_line = re.findall('[a-zA-Z]+', current_line) #current_line.split("'")
+        # current_line = current_line.split(",")
         print(current_line)
         actionSequences.append(current_line)
 

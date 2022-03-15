@@ -1,16 +1,29 @@
+import os
 import random
 from collections import namedtuple, deque
+from datetime import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 import b0RemoteApi
 
+now = datetime.now()
+current_time = now.strftime("%H:%M:%S")
+
+
 # User settings
 random.seed(13)
 TUNE = False
 num_episodes = 20
 max_steps = 100
+filepathForResults = os.getcwd()+"/resultsLQ/"+current_time
+
+
+if not os.path.exists(filepathForResults):
+    os.makedirs(filepathForResults)
+print("Results will be saved to: "+filepathForResults)
+
 
 Action = namedtuple('action', ['name'])
 t = Action("t")  # transition between stations
@@ -19,9 +32,13 @@ r_H = Action("rH")  # reach in housing
 r_C = Action("rC")  # reach in cover
 p_B = Action("pB")  # press button
 m_C = Action("mC")  # mount cover
-i_A = Action("i_A")  # initialize new assembly
+i_A = Action("iA")  # initialize new assembly
 actionSpace = [t, r_P, r_H, r_C, p_B, m_C, i_A]
 nominalAssembly = [t, r_P, t, r_H, p_B, r_C, m_C]
+
+
+def actionIndecesToString(actionSequence):
+    return [actionSpace[i].name for i in actionSequence]
 
 
 def isFeasible(action, state):
@@ -40,7 +57,7 @@ def isFeasible(action, state):
     elif not (state[1]) and action == 4:
         print('pB not feasible atm')
         return False
-    elif not (state[1] and state[3] and not state[8]) and action == 5:
+    elif not (state[1] and not state[8]) and action == 5:
         print('mC not feasible atm')
         return False
     else:
@@ -131,6 +148,7 @@ def learn(args=None):
         s = reset()
 
         rewards = []
+        actions = []
         assemblySeq = nominalAssembly.copy()
         completedSeq = 0
         for m in range(max_steps):
@@ -144,9 +162,10 @@ def learn(args=None):
                 next_s, r, done = s, 0, False
             print("Action:", actionSpace[a].name, "Q-value:", max_q)
 
+            actions.append(a)
             rewards.append(r)
             # Tracking progress on assembly
-            if actionSpace[a].name == 'i_A':
+            if actionSpace[a].name == 'iA':
                 assemblySeq = nominalAssembly.copy()
             elif len(assemblySeq) > 0 and actionSpace[a] == assemblySeq[0]:
                 assemblySeq.pop(0)
@@ -165,6 +184,11 @@ def learn(args=None):
 
         performance.append(sum(rewards))
 
+        with open(filepathForResults + '/risks.csv', 'a') as f:
+            np.savetxt(f, X=[rewards], delimiter=",")
+        with open(filepathForResults + '/actionSequences.txt', 'a') as filehandle:
+            filehandle.writelines("%s\n" % actionIndecesToString(acts) for acts in [actions])
+
         ax.plot(l, sum(rewards), 'b.')
         ax.text(l, sum(rewards), completedSeq)
         fig.tight_layout()
@@ -177,7 +201,7 @@ def step(action):
     actionIsSet = False
     actionIsDone = False
     maxRisk = 0
-    if action.name == "i_A":
+    if action.name == "iA":
         return reset(), maxRisk, False
     # action loop (1 execution = 1 single action in the simulation)
     while not actionIsDone:
