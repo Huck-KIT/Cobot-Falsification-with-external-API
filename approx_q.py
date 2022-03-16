@@ -14,9 +14,8 @@ current_time = now.strftime("%H:%M:%S")
 
 # User settings
 random.seed(13)
-TUNE = False
-num_episodes = 20
-max_steps = 100
+num_episodes = 1000
+max_steps = 10
 filepathForResults = os.getcwd()+"/resultsLQ/"+current_time
 
 
@@ -66,13 +65,13 @@ def isFeasible(action, state):
 
 class QAgent(object):
 
-    def __init__(self, gamma=0.9, A=100, B=1000, batch_size=50):
+    def __init__(self, gamma=0.9, A=100, B=1000, batch_size=25):
         self.gamma = gamma
         self.A = A
         self.B = B
         self.step = 0
         self.batch_size = batch_size
-        self.memory = ReplayMemory(200)
+        self.memory = ReplayMemory(10000)
 
         # Initialize Q-function
         self.weights = dict()
@@ -83,7 +82,8 @@ class QAgent(object):
 
     def policy(self, state):
         # Pick action
-        if random.random() < pow(0.5, int(self.step / (2 * max_steps)) + 1):
+        eps = pow(0.75, int(self.step / (10*max_steps)) + 1) # Controls the exploration
+        if random.random() < eps:
             a = random.randint(0, len(actionSpace) - 1)
             max_q = np.asscalar(np.dot(state, self.weights[a]))
         else:
@@ -151,7 +151,8 @@ def learn(args=None):
         actions = []
         assemblySeq = nominalAssembly.copy()
         completedSeq = 0
-        for m in range(max_steps):
+        m = 0
+        while True:
             # Pick action
             a, max_q = Q.policy(s)
 
@@ -160,9 +161,10 @@ def learn(args=None):
                 next_s, r, done = step(actionSpace[a])
             else:
                 next_s, r, done = s, 0, False
+                Q.update(s, a, r, next_s, done)
+                continue
             print("Action:", actionSpace[a].name, "Q-value:", max_q)
 
-            actions.append(a)
             rewards.append(r)
             # Tracking progress on assembly
             if actionSpace[a].name == 'iA':
@@ -172,15 +174,20 @@ def learn(args=None):
                 if len(assemblySeq) == 0:
                     print('---------- Assembly Sequence Completed ----------')
                     completedSeq += 1
+                else:
+                    print('{} actions left to do in {} steps'.format(len(assemblySeq), max_steps-m-1))
 
             # Update
             Q.update(s, a, r, next_s, done)
 
-            if done:
+            if done or m == max_steps - 1:
                 break
+
+            actions.append(a)
 
             # Increment
             s = next_s
+            m += 1
 
         performance.append(sum(rewards))
 
@@ -190,7 +197,8 @@ def learn(args=None):
             filehandle.writelines("%s\n" % actionIndecesToString(acts) for acts in [actions])
 
         ax.plot(l, sum(rewards), 'b.')
-        ax.text(l, sum(rewards), completedSeq)
+        if completedSeq > 0:
+            ax.text(l, sum(rewards), completedSeq)
         fig.tight_layout()
         fig.show()
 
@@ -202,14 +210,23 @@ def step(action):
     actionIsDone = False
     maxRisk = 0
     if action.name == "iA":
-        return reset(), maxRisk, False
+        return reset(), maxRisk, True
+
+    motionParametersMin = [-0.2, 0.8, 1]
+    motionParametersMax = [0.2, 1.2, 1.5]
+    motionParametersNominal = [0, 1, 1]
+    # sample random continuous motion parameters
+    motionParameters = list()
+    for k in range(3):
+        param = motionParametersMin[k] + (motionParametersMax[k] - motionParametersMin[k]) * random.random()
+        motionParameters.append(param)
     # action loop (1 execution = 1 single action in the simulation)
     while not actionIsDone:
         if not actionIsSet:
             actionIsSet, _ = client.simxCallScriptFunction("setAction@Bill", "sim.scripttype_childscript",
                                                            action.name, client.simxServiceCall())
             client.simxCallScriptFunction("setMotionParameters@Bill", "sim.scripttype_childscript",
-                                          [0, 1, 1],
+                                          motionParameters,
                                           client.simxServiceCall())  # TODO: check that parameters are within limits
             client.simxSynchronousTrigger()
         else:
@@ -272,7 +289,4 @@ if __name__ == "__main__":
         client.simxStartSimulation(client.simxServiceCall())
         step(actionSpace[0])
 
-        if TUNE:
-            print('Tune not implemented')
-        else:
-            learn()
+        learn()
