@@ -14,9 +14,9 @@ current_time = now.strftime("%H:%M:%S")
 
 # User settings
 random.seed(13)
-num_episodes = 1000
-max_steps = 10
-filepathForResults = os.getcwd()+"/resultsLQ/"+current_time
+num_episodes = 200
+max_steps = 12
+filepathForResults = os.getcwd()+"/resultsAQ/"+current_time
 
 
 if not os.path.exists(filepathForResults):
@@ -249,7 +249,7 @@ def step(action):
     workflowIsDone = False
     new_state = client.simxCallScriptFunction("getStateVector@StateVariablesTracker", "sim.scripttype_childscript",
                                               None, client.simxServiceCall())
-    return _augment_state(new_state), maxRisk, workflowIsDone
+    return _augment_state(new_state), min(maxRisk, 5.0), workflowIsDone
 
 
 def _augment_state(state):
