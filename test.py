@@ -25,7 +25,14 @@ workflowModel.setVerbosity(False)
 
 # Define default action sequence (this sequence will be used if USE_RANDOM_ACTIONS == False)
 
-defaultActionSequenceIndices = [0, 1, 3, 1, 1, 4, 1] #[t,r_P,t,r_H,p_B,r_C,m_C]
+#0 p   = Transition("p",   False, 0, False, False)  # get part from storage/put it back
+#1 f   = Transition("f",   False, 0, False, False)  # feed part to robot/retreive it
+#2 b_W = Transition("b_W", False, 0, False, False)  # press button to activate robot (normal)
+#3 b_O = Transition("b_O", False, 0, False, False)  # press button to activate robot in safety override mode
+#4 w   = Transition("w",   False, 0, False, False)  # wait
+#5 i   = Transition("i",   False, 0, False, False)  # inspect
+
+defaultActionSequenceIndices = [0, 1, 2, 1, 1, 4, 1] #[t,r_P,t,r_H,p_B,r_C,m_C]
 defaultActionSequence = list()
 for index in defaultActionSequenceIndices:
     defaultActionSequence.append(actionSpace[index])
@@ -41,6 +48,8 @@ with b0RemoteApi.RemoteApiClient('b0RemoteApi_V-REP-addOn','b0RemoteApiAddOn') a
     actionIsSet = False
     paramsMin = [-0.2,0.8,1]
     paramsMax = []
+
+
 
     # main search loop (1 execution = 1 action sequence in the simulation)
     for i in range(N_ITERATIONS):
@@ -65,6 +74,7 @@ with b0RemoteApi.RemoteApiClient('b0RemoteApi_V-REP-addOn','b0RemoteApiAddOn') a
                 else:
                     nextAction = defaultActionSequence[actionSequenceIndex]
                 actionIsSet,_ = client.simxCallScriptFunction("setAction@Bill","sim.scripttype_childscript",nextAction.name,client.simxServiceCall())
+                parametersAreSet,_ = client.simxCallScriptFunction("setMotionParameters@Bill","sim.scripttype_childscript",[1.3,-0.05,0,1.2],client.simxServiceCall()) #walking velocity scaling factor, reaching goal offset x, reaching goal offset y, hand velocity scaling factor
                 #client.simxCallScriptFunction("setMotionParameters@Bill","sim.scripttype_childscript",[0,1,1],client.simxServiceCall()) # TODO: check that parameters are within limits
                 if actionIsSet:
                     actionSequenceIndex += 1
