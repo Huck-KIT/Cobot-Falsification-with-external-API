@@ -259,7 +259,7 @@ def learn(args=None, multipliers=None):
     performance = []
     fig, ax = plt.subplots()
     ax.grid(True)
-    ax.set_title('Approx. Q-learning over Episodes of {} steps'.format(max_steps))
+    ax.set_title('Approx. Lagrangean Q-learning over Episodes of {} steps'.format(max_steps))
     ax.set_xlabel('Episode')
     ax.set_ylabel('Total Reward')
 
