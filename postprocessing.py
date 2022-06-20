@@ -150,7 +150,7 @@ def evaluateSequencesLagrangian(actionSequences,maximumRiskValues,riskThreshold)
 ################################################################################
 filepathQ = os.getcwd()+"/resultsLQ"#/13:49:26"
 filepathR = os.getcwd()+"/resultsRandomSearch/16:14:58"
-filepathLangrangian = os.getcwd()+"/06.20_094640_case_tryout"
+filepathLangrangian = os.getcwd()+"/06.20.2334"#"/06.20_094640_case_tryout"
 
 filesQ = [x[0] for x in os.walk(filepathQ)]
 filesQ.pop(0)
@@ -255,33 +255,39 @@ else:
     # plt.ylabel("F_collision/F_max")
     # plt.show()
 #
-    d = {'maxRisk':riskValuesAboveThresholdQ,'distance':distancesFromNominalSequenceQ,'method':'Qlearning'}
+    d = {'F_coll/F_max':riskValuesAboveThresholdQ,'Steps missing to final assembly':distancesFromNominalSequenceQ,'Search method':'Q-learning'}
     dataQ = pd.DataFrame(data=d)
 
-    d = {'maxRisk':riskValuesAboveThresholdR,'distance':distancesFromNominalSequenceR,'method':'Random'}
+    d = {'F_coll/F_max':riskValuesAboveThresholdR,'Steps missing to final assembly':distancesFromNominalSequenceR,'Search method':'Random'}
     dataR = pd.DataFrame(data=d)
 
-    d = {'maxRisk':riskValuesAboveThresholdLagrangian,'distance':distancesFromNominalSequenceLagrangian,'method':'Lagrangean'}
+    d = {'F_coll/F_max':riskValuesAboveThresholdLagrangian,'Steps missing to final assembly':distancesFromNominalSequenceLagrangian,'Search method':'Q-learning (Lagrangean)'}
     dataL = pd.DataFrame(data=d)
 
     d = [dataQ,dataR,dataL]
-    dataComplete = pd.concat(d)
+    dataComplete = pd.concat(d,ignore_index=True)
 #
 #     print(dataQ)
 #
-    fig, ax = plt.subplots()
+    # fig, ax = plt.subplots()
     # ax =  sns.stripplot(x="distance", y="maxRisk", hue="method",data=dataComplete, palette="Set2", size=20, marker="D", edgecolor="gray", alpha=.25)    # sns.kdeplot(data=dataQ, x="distance", y="maxRisk", ax=ax)
-    levels = 4
-    sns.kdeplot(x="distance", y="maxRisk",data=dataQ, ax=ax, color="Blue", label="Q-Learning",levels=levels)
-    sns.kdeplot(x="distance", y="maxRisk",data=dataR, ax=ax, color="Red", label="Random Sampling",levels=levels)
-    sns.kdeplot(x="distance", y="maxRisk",data=dataL, ax=ax, color="Green", label="Lagrangean",levels=levels)
+    # levels = 4
 
-    sns.scatterplot(x="distance", y="maxRisk",data=dataQ, ax=ax, color="Blue")
-    sns.scatterplot(x="distance", y="maxRisk",data=dataR, ax=ax, color="Red")
-    sns.scatterplot(x="distance", y="maxRisk",data=dataL, ax=ax, color="Green")
+
+
 
     # sns.swarmplot(data=dataComplete, x="distance", y="maxRisk", hue="method", dodge = False, ax=ax)
-    # g = sns.jointplot(data=dataComplete, x="distance", y="maxRisk", hue="method", kind = 'scatter')
-
-    plt.grid(True)
+    g = sns.jointplot(data=dataComplete, x="Steps missing to final assembly", y="F_coll/F_max", hue="Search method", kind = 'kde', levels=3)
+    ax=g.ax_joint
+    sns.scatterplot(x="Steps missing to final assembly", y="F_coll/F_max",data=dataQ, ax=ax, color="Blue")
+    sns.scatterplot(x="Steps missing to final assembly", y="F_coll/F_max",data=dataR, ax=ax, color="Orange")
+    sns.scatterplot(x="Steps missing to final assembly", y="F_coll/F_max",data=dataL, ax=ax, color="Green")
+    sns.move_legend(ax, "upper right")
+    # ax=g.axes
+    # sns.kdeplot(x="distance", y="maxRisk",data=dataQ, ax=ax, color="Blue", label="Q-Learning",levels=levels)
+    # sns.kdeplot(x="distance", y="maxRisk",data=dataR, ax=ax, color="Red", label="Random Sampling",levels=levels)
+    # sns.kdeplot(x="distance", y="maxRisk",data=dataL, ax=ax, color="Green", label="Lagrangean",levels=levels)
+    # ax.s(loc='lower left')
+    ax.grid(True)
+    ax.set_xlim(left=-0.1)
     plt.show()
