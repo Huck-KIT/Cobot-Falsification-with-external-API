@@ -89,11 +89,13 @@ def evaluateSequences(actionSequences,maximumRiskValues,riskThreshold):
     return actionSequencesAboveThreshold,normalizedCollisionForces,distancesFromNominalSequence
 
 ################################################################################
-filepathQ = os.getcwd()+"/resultsLQ/12:59:23"
-filepathR = os.getcwd()+"/resultsRandomSearch/16:14:58"
+filepathQ = os.getcwd()+"/resultsLQ"#/13:49:26"
+filepathR = os.getcwd()+"/resultsRandomSearch"#/16:14:58"
+filepathLangrangian = os.getcwd()+"/results_lagrangian"
 
-riskValuesQ,actionSequencesQ = readData(filepathQ)
-riskValuesR,actionSequencesR = readData(filepathR)
+riskValuesQ,actionSequencesQ    = readData(filepathQ)
+riskValuesR,actionSequencesR    = readData(filepathR)
+riskValuesLagangrian            = readData(filepathLangrangian)
 
 print("N: "+str(len(actionSequencesQ)))
 # for a fair comparison, use from the random sampling dataset only as many episodes as the Q-learning has
