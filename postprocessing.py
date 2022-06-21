@@ -9,6 +9,9 @@ import pandas as pd
 from pyxdameraulevenshtein import damerau_levenshtein_distance
 import csv
 
+plt.rcParams['pdf.fonttype'] = 42
+plt.rcParams['ps.fonttype'] = 42
+
 def getDistanceFromNominal(actionSequence):
     # to use the damerau levenshtein distance, action sequence is converted into a single string
     actionSequenceAsString = ""
@@ -150,7 +153,7 @@ def evaluateSequencesLagrangian(actionSequences,maximumRiskValues,riskThreshold)
 ################################################################################
 filepathQ = os.getcwd()+"/resultsLQ"#/13:49:26"
 filepathR = os.getcwd()+"/resultsRandomSearch/16:14:58"
-filepathLangrangian = os.getcwd()+"/06.20.2334"#"/06.20_094640_case_tryout"
+filepathLangrangian = os.getcwd()+"/06.20_094640_case_tryout"#"/06.20.2334"#"/06.20_094640_case_tryout"
 
 filesQ = [x[0] for x in os.walk(filepathQ)]
 filesQ.pop(0)
@@ -255,13 +258,19 @@ else:
     # plt.ylabel("F_collision/F_max")
     # plt.show()
 #
-    d = {'F_coll/F_max':riskValuesAboveThresholdQ,'Steps missing to final assembly':distancesFromNominalSequenceQ,'Search method':'Q-learning'}
+    label_x_axis = "Steps missing to final assembly"
+    label_y_axis = "Normalized Collision Force $F_{coll}/F_{max}$"
+    text_legend_Q = "Q-Learning"
+    text_legend_R = "Random Sampling"
+    text_legend_Lagrangean = "Q-Learning (Lagrangian)"
+
+    d = {label_y_axis:riskValuesAboveThresholdQ,label_x_axis:distancesFromNominalSequenceQ,'Search method':text_legend_Q}
     dataQ = pd.DataFrame(data=d)
 
-    d = {'F_coll/F_max':riskValuesAboveThresholdR,'Steps missing to final assembly':distancesFromNominalSequenceR,'Search method':'Random'}
+    d = {label_y_axis:riskValuesAboveThresholdR,label_x_axis:distancesFromNominalSequenceR,'Search method':text_legend_R}
     dataR = pd.DataFrame(data=d)
 
-    d = {'F_coll/F_max':riskValuesAboveThresholdLagrangian,'Steps missing to final assembly':distancesFromNominalSequenceLagrangian,'Search method':'Q-learning (Lagrangean)'}
+    d = {label_y_axis:riskValuesAboveThresholdLagrangian,label_x_axis:distancesFromNominalSequenceLagrangian,'Search method':text_legend_Lagrangean}
     dataL = pd.DataFrame(data=d)
 
     d = [dataQ,dataR,dataL]
@@ -277,11 +286,11 @@ else:
 
 
     # sns.swarmplot(data=dataComplete, x="distance", y="maxRisk", hue="method", dodge = False, ax=ax)
-    g = sns.jointplot(data=dataComplete, x="Steps missing to final assembly", y="F_coll/F_max", hue="Search method", kind = 'kde', levels=3)
+    g = sns.jointplot(data=dataComplete, x=label_x_axis, y=label_y_axis, hue="Search method", kind = 'kde', levels=3)
     ax=g.ax_joint
-    sns.scatterplot(x="Steps missing to final assembly", y="F_coll/F_max",data=dataQ, ax=ax, color="Blue")
-    sns.scatterplot(x="Steps missing to final assembly", y="F_coll/F_max",data=dataR, ax=ax, color="Orange")
-    sns.scatterplot(x="Steps missing to final assembly", y="F_coll/F_max",data=dataL, ax=ax, color="Green")
+    sns.scatterplot(x=label_x_axis, y=label_y_axis,data=dataQ, ax=ax, color="Blue")
+    sns.scatterplot(x=label_x_axis, y=label_y_axis,data=dataR, ax=ax, color="Orange")
+    sns.scatterplot(x=label_x_axis, y=label_y_axis,data=dataL, ax=ax, color="Green")
     sns.move_legend(ax, "upper right")
     # ax=g.axes
     # sns.kdeplot(x="distance", y="maxRisk",data=dataQ, ax=ax, color="Blue", label="Q-Learning",levels=levels)
@@ -290,4 +299,6 @@ else:
     # ax.s(loc='lower left')
     ax.grid(True)
     ax.set_xlim(left=-0.1)
-    plt.show()
+    ax.set_xlabel(label_x_axis, fontweight='bold')
+    ax.set_ylabel(label_y_axis, fontweight='bold')
+    plt.savefig("riskplot.pdf")
